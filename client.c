@@ -18,16 +18,14 @@ int main(int argc, char* argv[]){
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    int inet_at = inet_aton(Server_Address, &addr.sin_addr);
+    addr.sin_addr.s_addr = inet_addr(Server_Address);
     
-    printf("inet_aton is %d\n", inet_at);
-
     if(connect(socket_descriptor, (const struct sockaddr *)&addr, sizeof(struct sockaddr_in)) == -1){
         perror("connecting");
     }
     printf("write message:\n");
-    read(0, buffer, sizeof(buffer));
-    //write(1, buffer, sizeof(buffer));
-    write(socket_descriptor, buffer, sizeof(buffer));
+    int bytes_read = read(0, buffer, sizeof(buffer));
+    write(1, buffer, bytes_read);
+    write(socket_descriptor, buffer, bytes_read);
     close(socket_descriptor);
 }
