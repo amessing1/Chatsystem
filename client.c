@@ -3,13 +3,26 @@
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
+
+char * parseName(char buffer[], int length){
+    char *name = malloc(length);
+    int i;
+    for(i = 0; i < length; i++){
+        name[i] = buffer[i];
+    }
+    return name;
+}
 
 int main(int argc, char* argv[]){
 
     char *Server_Address = "127.0.0.1";
     uint16_t port = atoi(argv[1]);
     char buffer[256];
+    char name[11];
+    int online = 1;
+    char *your_name;
 
     int socket_descriptor = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if(socket_descriptor == -1){
@@ -23,9 +36,39 @@ int main(int argc, char* argv[]){
     if(connect(socket_descriptor, (const struct sockaddr *)&addr, sizeof(struct sockaddr_in)) == -1){
         perror("connecting");
     }
-    printf("write message:\n");
-    int bytes_read = read(0, buffer, sizeof(buffer));
-    write(1, buffer, bytes_read);
-    write(socket_descriptor, buffer, bytes_read);
+
+    printf("Hi, please enter your name:\n");
+    int name_bytes = read(0, name, sizeof(name));
+    your_name = parseName(name, name_bytes);
+    if(name_bytes == 11){
+        printf("Your name is too long. Pick another one(Max 10 characters):\n");
+        //go to read^
+    }
+
+    write(socket_descriptor, name, name_bytes); // Tell server you are online.
+    read(socket_descriptor, buffer, sizeof(buffer));
+    if(strcmp(buffer, "ERROR") == 0){
+        printf("Name taken, pick a new one:\n");
+        //go to read
+    } else if(strcmp(buffer, "SUCCESS") == 0) {
+        printf("SUCCESS");
+    }
+    printf("Welcome %s", your_name);
+    printf("You can now start chatting\n");
+    printf("-------\n");
+
+    while(online){
+        printf("To:\n");
+        name_bytes = read(0, name, sizeof(name));
+        printf("write message:\n");
+        int bytes_read = read(0, buffer, sizeof(buffer));
+        if(strcmp(buffer, "exit") == 0){
+            online = 0;
+        }
+        //write(1, buffer, bytes_read);
+        write(socket_descriptor, name, name_bytes);
+        write(socket_descriptor, buffer, bytes_read);
+    }
     close(socket_descriptor);
+
 }
