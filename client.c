@@ -16,14 +16,16 @@ char * parseName(char buffer[], int length){
     return name;
 }
 
-void recieveMessages(int sd){
+void *recieveMessages(void *args){
     char buffer[256];
     char name[11];
     char *message;
     char *from;
+    int online = 1;
+    long sd = (long)args;
     while(online){
         int bytes_read = read(sd, name, sizeof(name));
-        from = parseName(name, bytes_read - 1);
+        from = parseName(name, bytes_read);
         bytes_read = read(sd, buffer, sizeof(buffer));
         printf("From %s: %s\n", from, buffer);
     }
@@ -37,8 +39,9 @@ int main(int argc, char* argv[]){
     char name[11];
     int online = 1;
     char *your_name;
+    pthread_t pid;
 
-    int socket_descriptor = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    long socket_descriptor = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if(socket_descriptor == -1){
         perror("socket descriptor");
     }
@@ -71,7 +74,7 @@ int main(int argc, char* argv[]){
     printf("You can now start chatting\n");
     printf("-------\n");
 
-    pthread_create(NULL, NULL &recieveMessages, socket_descriptor);
+    pthread_create(&pid, NULL, (void *)recieveMessages, (void *)socket_descriptor);
 
     while(online){
         printf("To:\n");
@@ -86,5 +89,5 @@ int main(int argc, char* argv[]){
         write(socket_descriptor, buffer, bytes_read);
     }
     close(socket_descriptor);
-
+    return 0;
 }

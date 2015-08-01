@@ -45,28 +45,27 @@ int getSocketDescriptor(char *name, int name_length, struct linked_list *Account
     int sd = -1;
     int hashname;
     int i;
-    printf("Entry Name: %s\n", Accounts[447 % HashTableSize]->name);
 
-    printf("%s\n", name);
-    printf("%d\n", name_length);
+    //printf("%s\n", name);
+    //printf("%d\n", name_length);
     for(i = 0; i < name_length; i++){
         hashname += (int)name[i];
     }
-    printf("hashname: %d\n", hashname);
+    //printf("hashname: %d\n", hashname);
     struct linked_list *Entry = Accounts[hashname % HashTableSize]; 
     if(Entry == NULL){
         printf("5.1.0 Entry == NULL\n");
     }
-    printf("Entry address: %s\n", (char *)Entry);
-    printf("Entry Name: %s\n", Accounts[hashname % HashTableSize]->name);
-    printf("Entry sd: %d\n", Entry->SocketDescriptor);
-    printf("5.1.0\n");
-    printf("Entry.name: %s,  name: %s\n", Entry->name, name);
+    //printf("Entry address: %s\n", (char *)Entry);
+    //printf("Entry Name: %s\n", Accounts[hashname % HashTableSize]->name);
+    //printf("Entry sd: %d\n", Entry->SocketDescriptor);
+    //printf("5.1.0\n");
+    //printf("Entry.name: %s,  name: %s\n", Entry->name, name);
     if(strcmp(Entry->name, name) == 0){
-        printf("5.1.1\n");
+        //printf("5.1.1\n");
         sd = Entry->SocketDescriptor;
     } else {
-        printf("5.1.2\n");
+        //printf("5.1.2\n");
         while(Entry->Next != NULL){
             Entry = Entry->Next;
             if(strcmp(Entry->name, name) == 0){
@@ -76,7 +75,7 @@ int getSocketDescriptor(char *name, int name_length, struct linked_list *Account
         }
 
     }
-    printf("sd = %d\n", sd);
+    //printf("sd = %d\n", sd);
     return sd;
 }
 
@@ -87,18 +86,19 @@ void communicating(int fd, struct linked_list *Accounts[]){
 
     while(connected){
         int name_read = read(fd, buffer, sizeof(buffer));
-        printf("5.0\n");
+        //printf("5.0\n");
+        //printf("%d\n", name_read);
         char *name = parseName(buffer, name_read - 1);
-        printf("5.1\n");
+        //printf("5.1\n");
         sd = getSocketDescriptor(name, name_read - 1, Accounts);
-        printf("5.2\n");
+        //printf("5.2\n");
         if(sd == -1){
             write(fd, "USER OFFLINE", 12);
         }
-        printf("5.3\n");
+        //printf("5.3\n");
         write(sd, name, name_read - 1); // who sent the message
         int bytes_read = read(fd, buffer, sizeof(buffer));
-        printf("5.4\n");
+        //printf("5.4\n");
         write(sd, buffer, bytes_read); // the message
     }
 }
@@ -106,43 +106,43 @@ void communicating(int fd, struct linked_list *Accounts[]){
 
 int addOnline(int sd, char *name, int name_length, struct linked_list* Accounts[]){
     struct linked_list *new = malloc(sizeof(struct linked_list));
-    printf("3.0\n");
+    //printf("3.0\n");
     new->SocketDescriptor = sd;
     new->name = name;
     int hashname = 0;
     int i;
-    printf("3.1\n");
+    //printf("3.1\n");
     for(i = 0; i < name_length; i++){
         hashname += (int)name[i];
     }
-    printf("hashname: %d\n", hashname);
-    printf("3.2\n");
+    //printf("hashname: %d\n", hashname);
+    //printf("3.2\n");
     struct linked_list *Entry = Accounts[hashname % HashTableSize];
-    printf("3.3\n");
+    //printf("3.3\n");
 
     if(!Entry){
-        printf("HERE\n");
+      //  printf("HERE\n");
         Accounts[hashname % HashTableSize] = new;
-        printf("name: %s\n", Accounts[hashname % HashTableSize]->name);
-        printf("SocketDescriptor: %d\n", Accounts[hashname % HashTableSize]->SocketDescriptor);
+        //printf("name: %s\n", Accounts[hashname % HashTableSize]->name);
+        //printf("SocketDescriptor: %d\n", Accounts[hashname % HashTableSize]->SocketDescriptor);
     } else {
-        printf("3.4\n");
-        printf("%s\n", Entry->name);
+        //printf("3.4\n");
+        //printf("%s\n", Entry->name);
         if(strcmp(name, Entry->name) == 0){
             return 0;
         }
-        printf("3.5\n");
+        //printf("3.5\n");
         while(Entry->Next != NULL){
             Entry = Entry->Next;
-            printf("Entry.name: %s,  name: %s\n", Entry->name, name);
+          //  printf("Entry.name: %s,  name: %s\n", Entry->name, name);
             if(strcmp(name, Entry->name) == 0){
                 return 0;
             }
         }
         Entry->Next = new;
     }
-    printf("3.6\n");
-    printf("Entry Name: %s\n", Accounts[hashname % HashTableSize]->name);
+    //printf("3.6\n");
+   // printf("Entry Name: %s\n", Accounts[hashname % HashTableSize]->name);
 
     return 1;
 }
@@ -151,7 +151,7 @@ int addOnline(int sd, char *name, int name_length, struct linked_list* Accounts[
 int main(){
     struct sockaddr_in addr, server;
     int clilen = sizeof(server);
-    printf("HashTableSize = %d\n", HashTableSize);
+    //printf("HashTableSize = %d\n", HashTableSize);
     int sd = initialize_TCPsocket(&addr);
     struct linked_list *Accounts[HashTableSize] = {NULL};
 
@@ -164,22 +164,22 @@ int main(){
             perror("accept");
         } else {
             // CONNECTED!
-            printf("1\n");
+      //      printf("1\n");
             int read_name = read(server_fd, buffer, 11);
-            printf("2\n");
+        //    printf("2\n");
             name = parseName(buffer, read_name - 1);
-            printf("3\n");
+          //  printf("3\n");
             int result = addOnline(server_fd, name, read_name - 1, Accounts);
-            printf("Entry Name: %s\n", Accounts[447 % HashTableSize]->name);
+            //printf("Entry Name: %s\n", Accounts[447 % HashTableSize]->name);
 
             if(result == 0){
-                printf("4.0\n");
+              //  printf("4.0\n");
                 write(server_fd, "ERROR", 5);
             } else{
-                printf("4.1\n");
+                //printf("4.1\n");
                 write(server_fd, "SUCCESS", 7);
             }
-            printf("5\n");
+            //printf("5\n");
             // start communicating on a new thread.
             communicating(server_fd, Accounts);
 
