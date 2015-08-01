@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 
 char * parseName(char buffer[], int length){
@@ -13,6 +14,19 @@ char * parseName(char buffer[], int length){
         name[i] = buffer[i];
     }
     return name;
+}
+
+void recieveMessages(int sd){
+    char buffer[256];
+    char name[11];
+    char *message;
+    char *from;
+    while(online){
+        int bytes_read = read(sd, name, sizeof(name));
+        from = parseName(name, bytes_read - 1);
+        bytes_read = read(sd, buffer, sizeof(buffer));
+        printf("From %s: %s\n", from, buffer);
+    }
 }
 
 int main(int argc, char* argv[]){
@@ -46,16 +60,18 @@ int main(int argc, char* argv[]){
     }
 
     write(socket_descriptor, name, name_bytes); // Tell server you are online.
-    read(socket_descriptor, buffer, sizeof(buffer));
+    read(socket_descriptor, buffer, sizeof(buffer)); // recieve confirmation that your name is valid
     if(strcmp(buffer, "ERROR") == 0){
         printf("Name taken, pick a new one:\n");
         //go to read
     } else if(strcmp(buffer, "SUCCESS") == 0) {
-        printf("SUCCESS");
+        printf("SUCCESS\n");
     }
     printf("Welcome %s", your_name);
     printf("You can now start chatting\n");
     printf("-------\n");
+
+    pthread_create(NULL, NULL &recieveMessages, socket_descriptor);
 
     while(online){
         printf("To:\n");
