@@ -61,8 +61,9 @@ int main(int argc, char* argv[]){
         printf("Your name is too long. Pick another one(Max 10 characters):\n");
         //go to read^
     }
-
+    printf("Telling server that im online\n");
     write(socket_descriptor, name, name_bytes); // Tell server you are online.
+    printf("recieve confirmation\n");
     read(socket_descriptor, buffer, sizeof(buffer)); // recieve confirmation that your name is valid
     if(strcmp(buffer, "ERROR") == 0){
         printf("Name taken, pick a new one:\n");

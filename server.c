@@ -8,6 +8,7 @@
 
 struct linked_list{
     char *name;
+    int name_length;
     int SocketDescriptor;
     struct linked_list *Next;
 };
@@ -46,26 +47,18 @@ int getSocketDescriptor(char *name, int name_length, struct linked_list *Account
     int hashname;
     int i;
 
-    //printf("%s\n", name);
-    //printf("%d\n", name_length);
     for(i = 0; i < name_length; i++){
         hashname += (int)name[i];
     }
-    //printf("hashname: %d\n", hashname);
     struct linked_list *Entry = Accounts[hashname % HashTableSize]; 
     if(Entry == NULL){
         printf("5.1.0 Entry == NULL\n");
+        printf("hashname = %d\n", hashname);
+        return -1;
     }
-    //printf("Entry address: %s\n", (char *)Entry);
-    //printf("Entry Name: %s\n", Accounts[hashname % HashTableSize]->name);
-    //printf("Entry sd: %d\n", Entry->SocketDescriptor);
-    //printf("5.1.0\n");
-    //printf("Entry.name: %s,  name: %s\n", Entry->name, name);
     if(strcmp(Entry->name, name) == 0){
-        //printf("5.1.1\n");
         sd = Entry->SocketDescriptor;
     } else {
-        //printf("5.1.2\n");
         while(Entry->Next != NULL){
             Entry = Entry->Next;
             if(strcmp(Entry->name, name) == 0){
@@ -73,77 +66,56 @@ int getSocketDescriptor(char *name, int name_length, struct linked_list *Account
                 break;
             }   
         }
-
     }
-    //printf("sd = %d\n", sd);
     return sd;
 }
 
-void communicating(int fd, struct linked_list *Accounts[]){
+void communicating(char *from, int name_length, int fd, struct linked_list *Accounts[]){
     int connected = 1;
     char buffer[256];
     int sd;
 
-    while(connected){
-        int name_read = read(fd, buffer, sizeof(buffer));
-        //printf("5.0\n");
-        //printf("%d\n", name_read);
-        char *name = parseName(buffer, name_read - 1);
-        //printf("5.1\n");
-        sd = getSocketDescriptor(name, name_read - 1, Accounts);
-        //printf("5.2\n");
-        if(sd == -1){
-            write(fd, "USER OFFLINE", 12);
-        }
-        //printf("5.3\n");
-        write(sd, name, name_read - 1); // who sent the message
-        int bytes_read = read(fd, buffer, sizeof(buffer));
-        //printf("5.4\n");
-        write(sd, buffer, bytes_read); // the message
+    int name_read = read(fd, buffer, sizeof(buffer));
+    char *name = parseName(buffer, name_read - 1);
+    sd = getSocketDescriptor(name, name_read - 1, Accounts);
+    if(sd == -1){
+        write(fd, "USER OFFLINE", 12);
     }
+    write(sd, from, name_length); // who sent the message
+    int bytes_read = read(fd, buffer, sizeof(buffer));
+    write(sd, buffer, bytes_read); // the message
+
 }
 
 
 int addOnline(int sd, char *name, int name_length, struct linked_list* Accounts[]){
     struct linked_list *new = malloc(sizeof(struct linked_list));
-    //printf("3.0\n");
     new->SocketDescriptor = sd;
     new->name = name;
+    new->name_length = name_length;
     int hashname = 0;
     int i;
-    //printf("3.1\n");
     for(i = 0; i < name_length; i++){
         hashname += (int)name[i];
     }
-    //printf("hashname: %d\n", hashname);
-    //printf("3.2\n");
+    printf("hashname = %d\n", hashname);
+    
     struct linked_list *Entry = Accounts[hashname % HashTableSize];
-    //printf("3.3\n");
 
     if(!Entry){
-      //  printf("HERE\n");
         Accounts[hashname % HashTableSize] = new;
-        //printf("name: %s\n", Accounts[hashname % HashTableSize]->name);
-        //printf("SocketDescriptor: %d\n", Accounts[hashname % HashTableSize]->SocketDescriptor);
     } else {
-        //printf("3.4\n");
-        //printf("%s\n", Entry->name);
         if(strcmp(name, Entry->name) == 0){
             return 0;
         }
-        //printf("3.5\n");
         while(Entry->Next != NULL){
             Entry = Entry->Next;
-          //  printf("Entry.name: %s,  name: %s\n", Entry->name, name);
             if(strcmp(name, Entry->name) == 0){
                 return 0;
             }
         }
         Entry->Next = new;
     }
-    //printf("3.6\n");
-   // printf("Entry Name: %s\n", Accounts[hashname % HashTableSize]->name);
-
     return 1;
 }
 
@@ -151,38 +123,66 @@ int addOnline(int sd, char *name, int name_length, struct linked_list* Accounts[
 int main(){
     struct sockaddr_in addr, server;
     int clilen = sizeof(server);
+    int ready_sockets; // Number of sockets that request service.
+    int num_sockets; // Number of connected sockets including master socket.
+    fd_set read_sd; // Set of sockets. needs to be redone every iteration.
+    int i;
     //printf("HashTableSize = %d\n", HashTableSize);
     int sd = initialize_TCPsocket(&addr);
+
     struct linked_list *Accounts[HashTableSize] = {NULL};
 
     char buffer[256];
     int server_fd;
     char *name;
     while(1){
-        server_fd = accept(sd, (struct sockaddr *)&server, &clilen);
-        if(server_fd == -1){
-            perror("accept");
-        } else {
-            // CONNECTED!
-      //      printf("1\n");
-            int read_name = read(server_fd, buffer, 11);
-        //    printf("2\n");
-            name = parseName(buffer, read_name - 1);
-          //  printf("3\n");
-            int result = addOnline(server_fd, name, read_name - 1, Accounts);
-            //printf("Entry Name: %s\n", Accounts[447 % HashTableSize]->name);
 
-            if(result == 0){
-              //  printf("4.0\n");
-                write(server_fd, "ERROR", 5);
-            } else{
-                //printf("4.1\n");
-                write(server_fd, "SUCCESS", 7);
+        FD_ZERO(&read_sd); // clear the set.
+        FD_SET(sd, &read_sd); // Add master socket to set.
+        num_sockets = sd;
+
+        for(i = 0; i < HashTableSize; ++i){
+            struct linked_list *Entry = Accounts[i];
+            while(Entry != NULL){
+                FD_SET(Entry->SocketDescriptor, &read_sd); // Add all the sockets to set.
+                if(Entry->SocketDescriptor > num_sockets){
+                    num_sockets = Entry->SocketDescriptor;
+                }
+                Entry = Entry->Next;
             }
-            //printf("5\n");
-            // start communicating on a new thread.
-            communicating(server_fd, Accounts);
+        }
+        // Find all the "Active" sockets. 
+        printf("Test\n");
+        ready_sockets = select(num_sockets + 1, &read_sd, NULL, NULL, NULL);
+        printf("number of ready sockets = %d\n", ready_sockets);
+        // If master socket is "Active" a new connection is incomming.
+        if(FD_ISSET(sd, &read_sd)){
+            server_fd = accept(sd, (struct sockaddr *)&server, &clilen);
+            if(server_fd == -1){
+                perror("accept");
+            } else {
+                printf("Client is trying to connect\n");
+                int read_name = read(server_fd, buffer, 11);
+                name = parseName(buffer, read_name - 1);
+                int result = addOnline(server_fd, name, read_name - 1, Accounts);
 
+                if(result == 0){
+                    write(server_fd, "ERROR", 5);
+                } else {
+                    write(server_fd, "SUCCESS", 7);
+                }
+            }
+        }
+
+        // Go through all the sockets and se if they belong to the set. (Is it possible to iterate over read_sd_)
+        for(i = 0; i < HashTableSize; ++i){
+            struct linked_list *Entry = Accounts[i];
+            while(Entry != NULL){
+                if(FD_ISSET(Entry->SocketDescriptor, &read_sd)){
+                    communicating(Entry->name, Entry->name_length, Entry->SocketDescriptor, Accounts); // Handle the sockets request.
+                }
+                Entry = Entry->Next;
+            }
         }
     }
     close(server_fd);
