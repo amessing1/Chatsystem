@@ -79,12 +79,12 @@ void communicating(char *from, int name_length, int fd, struct linked_list *Acco
     char *name = parseName(buffer, name_read - 1);
     sd = getSocketDescriptor(name, name_read - 1, Accounts);
     if(sd == -1){
-        write(fd, "USER OFFLINE", 12);
+        write(fd, "USER OFFLINE", sizeof("USER OFFLINE"));
+    } else {
+        write(sd, from, name_length); // who sent the message
+        int bytes_read = read(fd, buffer, sizeof(buffer));
+        write(sd, buffer, bytes_read); // the message
     }
-    write(sd, from, name_length); // who sent the message
-    int bytes_read = read(fd, buffer, sizeof(buffer));
-    write(sd, buffer, bytes_read); // the message
-
 }
 
 
