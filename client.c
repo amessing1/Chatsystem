@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <SDL2/SDL.h>
+
 
 
 char * parseName(char buffer[], int length){
@@ -33,6 +35,41 @@ void *recieveMessages(void *args){
 
 int main(int argc, char* argv[]){
 
+    ///////////
+    //  GUI  //
+    ///////////
+
+    
+    const int SCREEN_WIDTH = 640;
+    const int SCREEN_HEIGHT = 480;
+
+    // Create window
+    SDL_Window *window;
+    SDL_Surface *screen;
+    SDL_Init(SDL_INIT_VIDEO);
+    window = SDL_CreateWindow("Chat program name", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    screen = SDL_GetWindowSurface(window);
+    SDL_Surface* screenSurface;
+
+    // Text input box
+    SDL_Rect *rect;
+    SDL_Surface *textInputBackground = SDL_LoadBMP("TextboxBackground.bmp");
+    SDL_SetTextInputRect(SDL_Rect* rect)
+    SDL_BlitSurface(textInputBackground, rect, screen, NULL);                
+    SDL_StartTextInput(void);
+    SDL_StopTextInput(void);
+
+
+    // Recieve Message box
+    screenSurface = SDL_LoadBMP("MessageBoxBackground.bmp");
+    SDL_BlitSurface(screenSurface, NULL, screen, NULL);   
+
+    // Update the window
+    SDL_UpdateWindowSurface( window );
+
+
+
+    /////////
     char *Server_Address = "127.0.0.1";
     uint16_t port = atoi(argv[1]);
     char buffer[256];
