@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <assert.h>
 #include <SDL2/SDL.h>
 
 
@@ -53,23 +54,32 @@ int main(int argc, char* argv[]){
 
     // Text input box
     SDL_Rect *rect;
-    SDL_Surface *textInputBackground = SDL_LoadBMP("TextboxBackground.bmp");
-    SDL_SetTextInputRect(SDL_Rect* rect)
-    SDL_BlitSurface(textInputBackground, rect, screen, NULL);                
-    SDL_StartTextInput(void);
-    SDL_StopTextInput(void);
+    SDL_Surface *textInputBackground;// = SDL_CreateRGBSurface(0, 100, 70, 0, 0, 0, 0, 0);
+    if((textInputBackground = SDL_CreateRGBSurface(0, 100, 70, 4, 255, 255, 0, 0)) == NULL){
+        printf("ERROR: %s\n", SDL_GetError());
+    }
+    //assert(textInputBackground->format != NULL);
+    SDL_FillRect(textInputBackground, NULL, SDL_MapRGB(textInputBackground->format, 255, 255, 0));
+    //SDL_Surface *textInputBackground = SDL_LoadBMP("TextboxBackground.bmp");
+    //SDL_SetTextInputRect(rect);
+    SDL_BlitSurface(textInputBackground, NULL, screen, NULL);                
+    //SDL_StartTextInput();
+    //SDL_StopTextInput();
 
 
     // Recieve Message box
-    screenSurface = SDL_LoadBMP("MessageBoxBackground.bmp");
-    SDL_BlitSurface(screenSurface, NULL, screen, NULL);   
+    //screenSurface = SDL_LoadBMP("MessageBoxBackground.bmp");
+    //SDL_BlitSurface(screenSurface, NULL, screen, NULL);   
 
     // Update the window
-    SDL_UpdateWindowSurface( window );
-
+    while(1){
+        SDL_UpdateWindowSurface( window );
+        sleep(1);
+    }
 
 
     /////////
+#if 0
     char *Server_Address = "127.0.0.1";
     uint16_t port = atoi(argv[1]);
     char buffer[256];
@@ -127,5 +137,6 @@ int main(int argc, char* argv[]){
         write(socket_descriptor, buffer, bytes_read);
     }
     close(socket_descriptor);
+#endif
     return 0;
 }
