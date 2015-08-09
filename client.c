@@ -46,34 +46,112 @@ int main(int argc, char* argv[]){
 
     // Create window
     SDL_Window *window;
-    SDL_Surface *screen;
+    //SDL_Surface *screen;
     SDL_Init(SDL_INIT_VIDEO);
     window = SDL_CreateWindow("Chat program name", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-    screen = SDL_GetWindowSurface(window);
-    SDL_Surface* screenSurface;
+    //screen = SDL_GetWindowSurface(window);
+    //SDL_Surface* screenSurface;
+    SDL_Renderer *renderer;
+    renderer = SDL_CreateRenderer(window, 0, SDL_RENDERER_ACCELERATED);
+    SDL_RenderClear(renderer);
+
+    SDL_Rect srcRect;
+    SDL_Rect destRect;
 
     // Text input box
-    SDL_Rect *rect;
-    SDL_Surface *textInputBackground;// = SDL_CreateRGBSurface(0, 100, 70, 0, 0, 0, 0, 0);
-    if((textInputBackground = SDL_CreateRGBSurface(0, 100, 70, 4, 255, 255, 0, 0)) == NULL){
+
+    srcRect.x = 0;
+    srcRect.y = 0;
+    srcRect.w = SCREEN_WIDTH / 2;
+    srcRect.h = 30;
+
+    destRect.x = SCREEN_WIDTH / 2 - 100;
+    destRect.y = SCREEN_HEIGHT - 40;
+    destRect.w = SCREEN_WIDTH / 2 + 90;
+    destRect.h = 30;
+
+    SDL_Surface *textInputBackground;
+    SDL_Texture *textInputTexture;
+    if((textInputBackground = SDL_CreateRGBSurface(0, 10, 10, 32, 0, 0, 0, 0)) == NULL){
         printf("ERROR: %s\n", SDL_GetError());
     }
-    //assert(textInputBackground->format != NULL);
-    SDL_FillRect(textInputBackground, NULL, SDL_MapRGB(textInputBackground->format, 255, 255, 0));
-    //SDL_Surface *textInputBackground = SDL_LoadBMP("TextboxBackground.bmp");
-    //SDL_SetTextInputRect(rect);
-    SDL_BlitSurface(textInputBackground, NULL, screen, NULL);                
-    //SDL_StartTextInput();
-    //SDL_StopTextInput();
+    SDL_FillRect(textInputBackground, &srcRect, SDL_MapRGB(textInputBackground->format, 255, 255, 0));
+    textInputTexture = SDL_CreateTextureFromSurface(renderer, textInputBackground);
+    SDL_FreeSurface(textInputBackground);
+    SDL_RenderCopy(renderer, textInputTexture, &srcRect, &destRect);
 
 
     // Recieve Message box
-    //screenSurface = SDL_LoadBMP("MessageBoxBackground.bmp");
-    //SDL_BlitSurface(screenSurface, NULL, screen, NULL);   
+
+    srcRect.x = 0;
+    srcRect.y = 0;
+    srcRect.w = SCREEN_WIDTH / 2;
+    srcRect.h = SCREEN_HEIGHT - 60;
+
+    destRect.x = SCREEN_WIDTH / 2 - 100;
+    destRect.y = 10;
+    destRect.w = SCREEN_WIDTH / 2 + 90;
+    destRect.h = SCREEN_HEIGHT - 60;
+
+    SDL_Surface *textRecieveBox;
+    SDL_Texture *recieveBoxTexture;
+    if((textRecieveBox = SDL_CreateRGBSurface(0, 10, 10, 32, 0, 0, 0, 0)) == NULL){
+        printf("ERROR: %s\n", SDL_GetError());
+    }
+    SDL_FillRect(textRecieveBox, &srcRect, SDL_MapRGB(textRecieveBox->format, 255, 0, 0));
+    recieveBoxTexture = SDL_CreateTextureFromSurface(renderer, textRecieveBox);
+    SDL_FreeSurface(textRecieveBox);
+    SDL_RenderCopy(renderer, recieveBoxTexture, &srcRect, &destRect);
+
+
+    // Profile Box
+
+    srcRect.x = 0;
+    srcRect.y = 0;
+    srcRect.w = SCREEN_WIDTH / 2 - 120;
+    srcRect.h = 100;
+
+    destRect.x = 10;
+    destRect.y = 10;
+    destRect.w = SCREEN_WIDTH / 2 - 120;
+    destRect.h = 100;
+
+    SDL_Surface *profileBox;
+    SDL_Texture *profileBoxTexture;
+    if((profileBox = SDL_CreateRGBSurface(0, 10, 10, 32, 0, 0, 0, 0)) == NULL){
+        printf("ERROR: %s\n", SDL_GetError());
+    }
+    SDL_FillRect(profileBox, &srcRect, SDL_MapRGB(profileBox->format, 0, 0, 255));
+    profileBoxTexture = SDL_CreateTextureFromSurface(renderer, profileBox);
+    SDL_FreeSurface(profileBox);
+    SDL_RenderCopy(renderer, profileBoxTexture, &srcRect, &destRect);
+
+
+    // Firends list
+
+    srcRect.x = 0;
+    srcRect.y = 0;
+    srcRect.w = SCREEN_WIDTH / 2 - 120;
+    srcRect.h = SCREEN_HEIGHT - 130;
+
+    destRect.x = 10;
+    destRect.y = 120;
+    destRect.w = SCREEN_WIDTH / 2 - 120;
+    destRect.h = SCREEN_HEIGHT - 130;
+
+    SDL_Surface *friendsBox;
+    SDL_Texture *friendsBoxTexture;
+    if((friendsBox = SDL_CreateRGBSurface(0, 10, 10, 32, 0, 0, 0, 0)) == NULL){
+        printf("ERROR: %s\n", SDL_GetError());
+    }
+    SDL_FillRect(friendsBox, &srcRect, SDL_MapRGB(friendsBox->format, 0, 255, 255));
+    friendsBoxTexture = SDL_CreateTextureFromSurface(renderer, friendsBox);
+    SDL_FreeSurface(friendsBox);
+    SDL_RenderCopy(renderer, friendsBoxTexture, &srcRect, &destRect);
 
     // Update the window
     while(1){
-        SDL_UpdateWindowSurface( window );
+        SDL_RenderPresent( renderer );
         sleep(1);
     }
 
