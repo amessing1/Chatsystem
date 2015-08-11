@@ -70,7 +70,7 @@ void activateInputField(SDL_Renderer *renderer, char *buffer){
     int selection_len;
     SDL_Event event;
     while(typing){
-        SDL_PollEvent(&event);
+        SDL_WaitEvent(&event);
         switch(event.type){
             case SDL_TEXTEDITING:
                 write(1, "1\n", sizeof("1\n"));
@@ -93,8 +93,13 @@ void activateInputField(SDL_Renderer *renderer, char *buffer){
             case SDL_QUIT:
 
                 typing = 0;
+                exit(0);
+            break;
+            default:
+                printf("%d\n", event.type);
             break;
         }
+        event.type = 0;
         
     }
     SDL_StopTextInput();
