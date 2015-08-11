@@ -7,11 +7,12 @@
 #include <pthread.h>
 #include <assert.h>
 #include <SDL2/SDL.h>
-#include <SDL/SDL_ttf.h>
+#include <SDL2/SDL_ttf.h>
 
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
+int counter = 0;
 
 char * parseName(char buffer[], int length){
     char *name = malloc(length);
@@ -38,7 +39,7 @@ void *recieveMessages(void *args){
 }
 
 
-void activateInputField(SDL_Renderer *renderer, char *buffer, int *counter){
+void activateInputField(SDL_Renderer *renderer, char *buffer){
     write(1, "Start typing\n", sizeof("Start typing\n"));
     SDL_Surface *textSurface;
     SDL_Texture *textTexture;
@@ -48,12 +49,12 @@ void activateInputField(SDL_Renderer *renderer, char *buffer, int *counter){
     SDL_Rect destRect;
     srcRect.x = 0;
     srcRect.y = 0;
-    srcRect.w = 30;
+    srcRect.w = 20;
     srcRect.h = 30;
 
     destRect.x = SCREEN_WIDTH / 2 - 100;
     destRect.y = SCREEN_HEIGHT - 40;
-    destRect.w = 30;
+    destRect.w = 20;
     destRect.h = 30;
     SDL_SetTextInputRect(&srcRect);
     TTF_Font *font;
@@ -67,25 +68,26 @@ void activateInputField(SDL_Renderer *renderer, char *buffer, int *counter){
     char *composition;
     int cursor;
     int selection_len;
+    SDL_Event event;
     while(typing){
-        SDL_Event event;
         SDL_PollEvent(&event);
         switch(event.type){
             case SDL_TEXTEDITING:
-                printf("1");
+                write(1, "1\n", sizeof("1\n"));
                 composition = event.edit.text;
                 cursor = event.edit.start;
                 selection_len = event.edit.length;
                 printf("%s\n", composition);
             break;
             case SDL_TEXTINPUT:
+                printf("%d, ", counter);
                 strcat(buffer, event.text.text);
                 assert(font != NULL);
                 textSurface = TTF_RenderUTF8_Solid(font, buffer, color);
                 textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
         
                 SDL_RenderCopy(renderer, textTexture, &srcRect, &destRect);
-                *counter += 1;
+                counter = counter + 1; // counter declared at top
                 SDL_RenderPresent(renderer);
             break;
             case SDL_QUIT:
@@ -105,9 +107,6 @@ int main(int argc, char* argv[]){
     //  GUI  //
     ///////////
 
-    
-    
-
     // Create window
     SDL_Window *window;
     //SDL_Surface *screen;
@@ -126,7 +125,6 @@ int main(int argc, char* argv[]){
 
     // Text input box
     char textBuffer;
-    int textCounter = 0;
     textInputRect.x = 0;
     textInputRect.y = 0;
     textInputRect.w = SCREEN_WIDTH / 2;
@@ -232,7 +230,7 @@ int main(int argc, char* argv[]){
                         (event.button.y > SCREEN_HEIGHT - 40) && 
                         (event.button.y < SCREEN_HEIGHT - 10)){
                         // Text Input
-                        activateInputField(renderer, &textBuffer, &textCounter);
+                        activateInputField(renderer, &textBuffer);
                     }
                 }
             break;
