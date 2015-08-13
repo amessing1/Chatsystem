@@ -49,8 +49,6 @@ void activateInputField(SDL_Renderer *renderer, char *buffer){
     SDL_Rect destRect;
     srcRect.x = 0;
     srcRect.y = 0;
-    srcRect.w = 20;
-    srcRect.h = 30;
 
     destRect.x = SCREEN_WIDTH / 2 - 100;
     destRect.y = SCREEN_HEIGHT - 40;
@@ -81,11 +79,23 @@ void activateInputField(SDL_Renderer *renderer, char *buffer){
             break;
             case SDL_TEXTINPUT:
                 printf("%d, ", counter);
+                printf("%s\n", event.text.text);
                 strcat(buffer, event.text.text);
                 assert(font != NULL);
-                textSurface = TTF_RenderUTF8_Solid(font, buffer, color);
+                int advance;
+                int minX;
+                int maxX;
+                int minY;
+                int maxY;
+                TTF_GlyphMetrics(font, (Uint16)*event.text.text, &minX, &maxX, &minY, &maxY, &advance);
+                srcRect.w = maxX - minX;
+                srcRect.h = maxY - minY;
+                destRect.w = srcRect.w;
+                destRect.h = srcRect.h;
+                printf("w = %d, h = %d\n", srcRect.w, srcRect.h);
+                textSurface = TTF_RenderUTF8_Blended(font, buffer, color);
                 textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-        
+                destRect.x += advance;
                 SDL_RenderCopy(renderer, textTexture, &srcRect, &destRect);
                 counter = counter + 1; // counter declared at top
                 SDL_RenderPresent(renderer);
