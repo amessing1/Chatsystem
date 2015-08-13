@@ -52,11 +52,9 @@ void activateInputField(SDL_Renderer *renderer, char *buffer){
 
     destRect.x = SCREEN_WIDTH / 2 - 100;
     destRect.y = SCREEN_HEIGHT - 40;
-    destRect.w = 20;
-    destRect.h = 30;
     SDL_SetTextInputRect(&srcRect);
     TTF_Font *font;
-    if((font = TTF_OpenFont("fonts/FreeSerif.ttf", 8)) == NULL){
+    if((font = TTF_OpenFont("fonts/FreeSerif.ttf", 18)) == NULL){
         printf("TTF_OpenFont: %s\n", TTF_GetError());
     }
     SDL_Color color = {0,0,0};
@@ -78,25 +76,28 @@ void activateInputField(SDL_Renderer *renderer, char *buffer){
                 printf("%s\n", composition);
             break;
             case SDL_TEXTINPUT:
-                printf("%d, ", counter);
+                //printf("%d, ", counter);
                 printf("%s\n", event.text.text);
                 strcat(buffer, event.text.text);
-                assert(font != NULL);
                 int advance;
                 int minX;
                 int maxX;
                 int minY;
                 int maxY;
                 TTF_GlyphMetrics(font, (Uint16)*event.text.text, &minX, &maxX, &minY, &maxY, &advance);
+                assert(TTF_GlyphIsProvided(font, (Uint16)*event.text.text));
+                printf("minX = %d, maxX = %d, minY = %d, maxY = %d\n", minX, maxX, minY, maxY);
                 srcRect.w = maxX - minX;
                 srcRect.h = maxY - minY;
                 destRect.w = srcRect.w;
                 destRect.h = srcRect.h;
-                printf("w = %d, h = %d\n", srcRect.w, srcRect.h);
-                textSurface = TTF_RenderUTF8_Blended(font, buffer, color);
+                //printf("w = %d, h = %d\n", srcRect.w, srcRect.h);
+                textSurface = TTF_RenderUTF8_Blended(font, event.text.text, color);
                 textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
                 destRect.x += advance;
                 SDL_RenderCopy(renderer, textTexture, &srcRect, &destRect);
+                printf("srcRect.x = %d, srcRect.y = %d, srcRect.w = %d, srcRect.h = %d\n", srcRect.x, srcRect.y, srcRect.w, srcRect.h);
+                printf("destRect.x = %d, destRect.y = %d, destRect.w = %d, destRect.h = %d\n", destRect.x, destRect.y, destRect.w, destRect.h);
                 counter = counter + 1; // counter declared at top
                 SDL_RenderPresent(renderer);
             break;
@@ -106,12 +107,12 @@ void activateInputField(SDL_Renderer *renderer, char *buffer){
                 exit(0);
             break;
             default:
-                printf("%d\n", event.type);
             break;
         }
         event.type = 0;
         
     }
+    TTF_CloseFont(font);
     SDL_StopTextInput();
     return;
 }
