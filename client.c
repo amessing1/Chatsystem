@@ -47,10 +47,7 @@ void printInputString(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect *destRect
     SDL_Color color = {0,255,0}; // font color
     SDL_Color bgcolor = {128,128,128}; // background font color, used only in Shaded
 
-    int advance;
-    TTF_GlyphMetrics(font, textBuffer[counter], NULL, NULL, NULL, NULL, &advance);
-    printf("glyph = %d, counter = %d\n", textBuffer[counter], counter);
-    //assert(TTF_GlyphIsProvided(font, textBuffer[counter])); // check that a glyph exists, change to different?
+    printf("glyph = %s, counter = %d\n", textBuffer, counter);
                 
 
     SDL_Surface *textSurface;
@@ -59,6 +56,14 @@ void printInputString(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect *destRect
     textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
     SDL_RenderCopy(renderer, textTexture, srcRect, destRect);
     SDL_RenderPresent(renderer);
+
+    int advance;
+    TTF_GlyphMetrics(font, textBuffer[counter - 1], NULL, NULL, NULL, NULL, &advance);
+    assert(TTF_GlyphIsProvided(font, textBuffer[counter - 1])); // check that a glyph exists, change to different?    
+
+    srcRect->h = destRect->h; // multiple rows?
+    destRect->w += advance; // updates width
+    srcRect->w = destRect->w;
 
 #if 0
     SDL_Event event;
@@ -221,23 +226,17 @@ int main(int argc, char* argv[]){
             break;
             case SDL_TEXTINPUT: // writing text
                 if(messageInput){
+                    printf("%s\n", event.text.text);
+                    printf("counter = %d\n", counter);
                     textBuffer[counter] = *event.text.text;
-                    int advance;
-                    TTF_GlyphMetrics(font, textBuffer[counter], NULL, NULL, NULL, NULL, &advance);
-                    assert(TTF_GlyphIsProvided(font, textBuffer[counter])); // check that a glyph exists, change to different?
-                    
-                    srcRect.h = destRect.h; // multiple rows?
-                    destRect.w += advance; // updates width
-                    srcRect.w = destRect.w;
                     ++counter; // counter declared at top
-
-
                 }
             break;
             case SDL_QUIT:
                 running = 0;
             break;
         }
+        event.type = 0;
         //sleep(0.1);
     
     }
