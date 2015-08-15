@@ -41,94 +41,31 @@ void *recieveMessages(void *args){
 }
 
 
-void activateInputField(SDL_Renderer *renderer){
-    write(1, "Start typing\n", sizeof("Start typing\n"));
-    
-    TTF_Font *font;
-    if((font = TTF_OpenFont("fonts/FreeSerif.ttf", 20)) == NULL){
-        printf("TTF_OpenFont: %s\n", TTF_GetError());
-    }
-    int fontAscent = TTF_FontAscent(font);
-    int fontDescent = TTF_FontDescent(font);
+void printInputString(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect *destRect, SDL_Rect *srcRect){
+
+
+    SDL_Color color = {0,255,0}; // font color
+    SDL_Color bgcolor = {128,128,128}; // background font color, used only in Shaded
+
+    int advance;
+    TTF_GlyphMetrics(font, textBuffer[counter], NULL, NULL, NULL, NULL, &advance);
+    printf("glyph = %d, counter = %d\n", textBuffer[counter], counter);
+    //assert(TTF_GlyphIsProvided(font, textBuffer[counter])); // check that a glyph exists, change to different?
+                
 
     SDL_Surface *textSurface;
     SDL_Texture *textTexture;
+    textSurface = TTF_RenderUTF8_Blended(font, textBuffer, color);
+    textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    SDL_RenderCopy(renderer, textTexture, srcRect, destRect);
+    SDL_RenderPresent(renderer);
 
-    SDL_Rect srcRect;
-    SDL_Rect destRect;
-    int baseline = SCREEN_HEIGHT - 20;
-
-    srcRect.x = 0;
-    srcRect.y = 0;
-
-    destRect.x = SCREEN_WIDTH / 2 - 90;
-    destRect.y = baseline - fontAscent;
-    destRect.w = 0; //start with nothing and expand when you type. Will lose everything if restarted.
-    destRect.h = fontAscent - fontDescent;
-
-    SDL_SetTextInputRect(&srcRect);
-    
-    SDL_Color color = {0,0,0}; // font color
-    SDL_Color bgcolor = {128,128,128}; // background font color, used only in Shaded
-
-    SDL_StartTextInput();
-    int typing = 1;
-    char *composition;
-    int cursor;
-    int selection_len;
+#if 0
     SDL_Event event;
     while(typing){
         SDL_WaitEvent(&event); // blocking waiting for event
         switch(event.type){
-            case SDL_KEYDOWN:
-                if(event.key.keysym.sym == SDLK_BACKSPACE){
-                    //handle backspace
-                    if(counter > 0){
-                        int advance;
-                        TTF_GlyphMetrics(font, textBuffer[counter], NULL, NULL, NULL, NULL, &advance);
-                        srcRect.h = destRect.h; // multiple rows?
-                        destRect.w -= advance;
-                        srcRect.w = destRect.w;
-                        textBuffer[counter] = '\0';
-                        --counter;
-                        printf("counter = %d\n", counter);
-                        textSurface = TTF_RenderUTF8_Blended(font, textBuffer, color);
-                        textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-                        // clear previous render?
-                        SDL_RenderCopy(renderer, textTexture, &srcRect, &destRect);
-                    }
-                    break;
-                } else if(event.key.keysym.sym == SDLK_RETURN){
-                    //handle retrun
-                    if(counter > 0){
-                        //print message to message box
-                        printf("Enter\n");
-                        counter = 0;
-                        destRect.w = 0;
-                        srcRect.w = 0;
-                        textBuffer[counter] = '\0';
-                    }
-                    break;
-                }
-            break;
-            case SDL_TEXTINPUT: // writing text
-                textBuffer[counter] = *event.text.text;
-                int advance;
-                printf("glyph = %s\n", (char *)event.text.text);
-                TTF_GlyphMetrics(font, (Uint16)*event.text.text, NULL, NULL, NULL, NULL, &advance);
-                assert(TTF_GlyphIsProvided(font, (Uint16)*event.text.text)); // check that a glyph exists, change to different?
-                
-                srcRect.h = destRect.h; // multiple rows?
-                destRect.w += advance; // updates width
-                srcRect.w = destRect.w;
-
-                textSurface = TTF_RenderUTF8_Blended(font, textBuffer, color);
-                textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-                // clear previous render?
-                SDL_RenderCopy(renderer, textTexture, &srcRect, &destRect);
-                ++counter; // counter declared at top
-                SDL_RenderPresent(renderer);
-            break;
+            
             case SDL_QUIT:
 
                 typing = 0;
@@ -142,8 +79,37 @@ void activateInputField(SDL_Renderer *renderer){
         
     }
     TTF_CloseFont(font);
+#endif
     SDL_StopTextInput();
     return;
+}
+
+void renderGUI(SDL_Renderer *renderer, int x, int y, int w, int h, int r, int g, int b){
+    SDL_Rect srcRect;
+    SDL_Rect destRect;
+
+    srcRect.x = 0;
+    srcRect.y = 0;
+    srcRect.w = w;
+    srcRect.h = h;
+
+    destRect.x = x;
+    destRect.y = y;
+    destRect.w = w;
+    destRect.h = h;
+
+    SDL_Surface *surfaceBox;
+    SDL_Texture *texTexture;
+    if((surfaceBox = SDL_CreateRGBSurface(0, 10, 10, 32, 0, 0, 0, 0)) == NULL){
+        printf("ERROR: %s\n", SDL_GetError());
+    }
+    SDL_FillRect(surfaceBox, &srcRect, SDL_MapRGB(surfaceBox->format, r, g, b));
+    texTexture = SDL_CreateTextureFromSurface(renderer, surfaceBox);
+    SDL_FreeSurface(surfaceBox);
+    SDL_RenderCopy(renderer, texTexture, &srcRect, &destRect);
+    SDL_DestroyTexture(texTexture);
+
+
 }
 
 int main(int argc, char* argv[]){
@@ -157,113 +123,60 @@ int main(int argc, char* argv[]){
     //SDL_Surface *screen;
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
-    window = SDL_CreateWindow("Chat program name", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    window = SDL_CreateWindow("Den ekologiska chatten", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     //screen = SDL_GetWindowSurface(window);
     //SDL_Surface* screenSurface;
     SDL_Renderer *renderer;
     renderer = SDL_CreateRenderer(window, 0, SDL_RENDERER_ACCELERATED);
-    SDL_RenderClear(renderer);
+
+
+    TTF_Font *font;
+    if((font = TTF_OpenFont("fonts/FreeSerif.ttf", 20)) == NULL){
+        printf("TTF_OpenFont: %s\n", TTF_GetError());
+    }
+    int fontAscent = TTF_FontAscent(font);
+    int fontDescent = TTF_FontDescent(font);
+
+  
 
     SDL_Rect srcRect;
     SDL_Rect destRect;
-    SDL_Rect textInputRect;
-
-    // Text input box
-    textInputRect.x = 0;
-    textInputRect.y = 0;
-    textInputRect.w = SCREEN_WIDTH / 2;
-    textInputRect.h = 30;
-
-    destRect.x = SCREEN_WIDTH / 2 - 100;
-    destRect.y = SCREEN_HEIGHT - 40;
-    destRect.w = SCREEN_WIDTH / 2 + 90;
-    destRect.h = 30;
-
-    SDL_Surface *textInputBackground;
-    SDL_Texture *textInputTexture;
-    if((textInputBackground = SDL_CreateRGBSurface(0, 10, 10, 32, 0, 0, 0, 0)) == NULL){
-        printf("ERROR: %s\n", SDL_GetError());
-    }
-    SDL_FillRect(textInputBackground, &textInputRect, SDL_MapRGB(textInputBackground->format, 255, 255, 0));
-    textInputTexture = SDL_CreateTextureFromSurface(renderer, textInputBackground);
-    SDL_FreeSurface(textInputBackground);
-    SDL_RenderCopy(renderer, textInputTexture, &textInputRect, &destRect);
-
-
-    // Recieve Message box
+    int baseline = SCREEN_HEIGHT - 20;
 
     srcRect.x = 0;
     srcRect.y = 0;
-    srcRect.w = SCREEN_WIDTH / 2;
-    srcRect.h = SCREEN_HEIGHT - 60;
 
-    destRect.x = SCREEN_WIDTH / 2 - 100;
-    destRect.y = 10;
-    destRect.w = SCREEN_WIDTH / 2 + 90;
-    destRect.h = SCREEN_HEIGHT - 60;
-
-    SDL_Surface *textRecieveBox;
-    SDL_Texture *recieveBoxTexture;
-    if((textRecieveBox = SDL_CreateRGBSurface(0, 10, 10, 32, 0, 0, 0, 0)) == NULL){
-        printf("ERROR: %s\n", SDL_GetError());
-    }
-    SDL_FillRect(textRecieveBox, &srcRect, SDL_MapRGB(textRecieveBox->format, 255, 0, 0));
-    recieveBoxTexture = SDL_CreateTextureFromSurface(renderer, textRecieveBox);
-    SDL_FreeSurface(textRecieveBox);
-    SDL_RenderCopy(renderer, recieveBoxTexture, &srcRect, &destRect);
+    destRect.x = SCREEN_WIDTH / 2 - 90;
+    destRect.y = baseline - fontAscent;
+    destRect.w = 0; //start with nothing and expand when you type. Will lose everything if restarted.
+    destRect.h = fontAscent - fontDescent;
+    srcRect.h = destRect.h; // multiple rows?
 
 
-    // Profile Box
-
-    srcRect.x = 0;
-    srcRect.y = 0;
-    srcRect.w = SCREEN_WIDTH / 2 - 120;
-    srcRect.h = 100;
-
-    destRect.x = 10;
-    destRect.y = 10;
-    destRect.w = SCREEN_WIDTH / 2 - 120;
-    destRect.h = 100;
-
-    SDL_Surface *profileBox;
-    SDL_Texture *profileBoxTexture;
-    if((profileBox = SDL_CreateRGBSurface(0, 10, 10, 32, 0, 0, 0, 0)) == NULL){
-        printf("ERROR: %s\n", SDL_GetError());
-    }
-    SDL_FillRect(profileBox, &srcRect, SDL_MapRGB(profileBox->format, 0, 0, 255));
-    profileBoxTexture = SDL_CreateTextureFromSurface(renderer, profileBox);
-    SDL_FreeSurface(profileBox);
-    SDL_RenderCopy(renderer, profileBoxTexture, &srcRect, &destRect);
-
-
-    // Firends list
-
-    srcRect.x = 0;
-    srcRect.y = 0;
-    srcRect.w = SCREEN_WIDTH / 2 - 120;
-    srcRect.h = SCREEN_HEIGHT - 130;
-
-    destRect.x = 10;
-    destRect.y = 120;
-    destRect.w = SCREEN_WIDTH / 2 - 120;
-    destRect.h = SCREEN_HEIGHT - 130;
-
-    SDL_Surface *friendsBox;
-    SDL_Texture *friendsBoxTexture;
-    if((friendsBox = SDL_CreateRGBSurface(0, 10, 10, 32, 0, 0, 0, 0)) == NULL){
-        printf("ERROR: %s\n", SDL_GetError());
-    }
-    SDL_FillRect(friendsBox, &srcRect, SDL_MapRGB(friendsBox->format, 0, 255, 255));
-    friendsBoxTexture = SDL_CreateTextureFromSurface(renderer, friendsBox);
-    SDL_FreeSurface(friendsBox);
-    SDL_RenderCopy(renderer, friendsBoxTexture, &srcRect, &destRect);
+    SDL_SetTextInputRect(&srcRect);
+    SDL_StartTextInput();
+    int messageInput = 0;
+    char *composition;
+    int cursor;
+    int selection_len;
 
     // Update the window
     int running = 1;
     while(running){
+        SDL_RenderClear(renderer);
+        renderGUI(renderer, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 255, 255, 255); // background
+        renderGUI(renderer, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT - 40, SCREEN_WIDTH / 2 + 90, 30, 200, 200, 200); // textinput
+        renderGUI(renderer, SCREEN_WIDTH / 2 - 100, 10, SCREEN_WIDTH / 2 + 90, SCREEN_HEIGHT - 60, 200, 200, 200); //recieve text box
+        renderGUI(renderer, 10, 10, SCREEN_WIDTH / 2 - 120, 100, 200, 200, 200); // profile box
+        renderGUI(renderer, 10, 120, SCREEN_WIDTH / 2 - 120, SCREEN_HEIGHT - 130, 200, 200, 200); // friends list
+        
+        if (counter > 0){
+            printInputString(renderer, font, &destRect, &srcRect);
+        }
+
         SDL_RenderPresent( renderer );
         SDL_Event event;
-        SDL_PollEvent(&event);
+        SDL_WaitEvent(&event);
         switch(event.type){
             
             case SDL_MOUSEBUTTONDOWN:
@@ -274,8 +187,51 @@ int main(int argc, char* argv[]){
                         (event.button.y > SCREEN_HEIGHT - 40) && 
                         (event.button.y < SCREEN_HEIGHT - 10)){
                         // Text Input
-                        activateInputField(renderer);
+                        messageInput = 1;
+                        printf("Input activated\n");
                     }
+                    else {
+                        messageInput = 0;
+                    }
+                }
+            break;
+            case SDL_KEYDOWN:
+                if((event.key.keysym.sym == SDLK_BACKSPACE) && messageInput){
+                    //handle backspace
+                    if(counter > 0){
+                        int advance;
+                        TTF_GlyphMetrics(font, textBuffer[counter], NULL, NULL, NULL, NULL, &advance);
+                        destRect.w -= advance;
+                        srcRect.w = destRect.w;
+                        textBuffer[counter] = '\0';
+                        --counter;
+                    }
+                    break;
+                } else if(event.key.keysym.sym == SDLK_RETURN && messageInput){
+                    //handle retrun
+                    if(counter > 0){
+                        //print message to message box
+                        counter = 0;
+                        destRect.w = 0;
+                        srcRect.w = 0;
+                        textBuffer[0] = '\0';
+                    }
+                    break;
+                }
+            break;
+            case SDL_TEXTINPUT: // writing text
+                if(messageInput){
+                    textBuffer[counter] = *event.text.text;
+                    int advance;
+                    TTF_GlyphMetrics(font, textBuffer[counter], NULL, NULL, NULL, NULL, &advance);
+                    assert(TTF_GlyphIsProvided(font, textBuffer[counter])); // check that a glyph exists, change to different?
+                    
+                    srcRect.h = destRect.h; // multiple rows?
+                    destRect.w += advance; // updates width
+                    srcRect.w = destRect.w;
+                    ++counter; // counter declared at top
+
+
                 }
             break;
             case SDL_QUIT:
@@ -285,10 +241,7 @@ int main(int argc, char* argv[]){
         //sleep(0.1);
     
     }
-    SDL_DestroyTexture(friendsBoxTexture);
-    SDL_DestroyTexture(profileBoxTexture);
-    SDL_DestroyTexture(recieveBoxTexture);
-    SDL_DestroyTexture(textInputTexture);
+    
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
