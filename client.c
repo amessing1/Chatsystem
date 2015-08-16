@@ -44,7 +44,7 @@ void *recieveMessages(void *args){
 void printInputString(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect *destRect, SDL_Rect *srcRect){
 
 
-    SDL_Color color = {0,255,0}; // font color
+    SDL_Color color = {0,150,0}; // font color
     SDL_Color bgcolor = {128,128,128}; // background font color, used only in Shaded
 
     printf("glyph = %s, counter = %d\n", textBuffer, counter);
@@ -57,35 +57,7 @@ void printInputString(SDL_Renderer *renderer, TTF_Font *font, SDL_Rect *destRect
     SDL_RenderCopy(renderer, textTexture, srcRect, destRect);
     SDL_RenderPresent(renderer);
 
-    int advance;
-    TTF_GlyphMetrics(font, textBuffer[counter - 1], NULL, NULL, NULL, NULL, &advance);
-    assert(TTF_GlyphIsProvided(font, textBuffer[counter - 1])); // check that a glyph exists, change to different?    
-
-    srcRect->h = destRect->h; // multiple rows?
-    destRect->w += advance; // updates width
-    srcRect->w = destRect->w;
-
-#if 0
-    SDL_Event event;
-    while(typing){
-        SDL_WaitEvent(&event); // blocking waiting for event
-        switch(event.type){
-            
-            case SDL_QUIT:
-
-                typing = 0;
-                exit(0);
-            break;
-            default:
-            printf("type = %d\n", event.type);
-            break;
-        }
-        event.type = 0;
-        
-    }
-    TTF_CloseFont(font);
-#endif
-    SDL_StopTextInput();
+   
     return;
 }
 
@@ -139,6 +111,7 @@ int main(int argc, char* argv[]){
     if((font = TTF_OpenFont("fonts/FreeSerif.ttf", 20)) == NULL){
         printf("TTF_OpenFont: %s\n", TTF_GetError());
     }
+    //TTF_SetFontOutline(font, 1);
     int fontAscent = TTF_FontAscent(font);
     int fontDescent = TTF_FontDescent(font);
 
@@ -154,7 +127,7 @@ int main(int argc, char* argv[]){
     destRect.x = SCREEN_WIDTH / 2 - 90;
     destRect.y = baseline - fontAscent;
     destRect.w = 0; //start with nothing and expand when you type. Will lose everything if restarted.
-    destRect.h = fontAscent - fontDescent;
+    destRect.h = (fontAscent - fontDescent) + 2;
     srcRect.h = destRect.h; // multiple rows?
 
 
@@ -186,7 +159,6 @@ int main(int argc, char* argv[]){
             
             case SDL_MOUSEBUTTONDOWN:
                 if(event.button.button == SDL_BUTTON_LEFT){
-                    printf("type: %d, BUTTON_LEFT: %d\n", event.button.button, SDL_BUTTON_LEFT);
                     if((event.button.x > SCREEN_WIDTH / 2 - 100) && 
                         (event.button.x < SCREEN_WIDTH - 10) &&
                         (event.button.y > SCREEN_HEIGHT - 40) && 
@@ -205,7 +177,7 @@ int main(int argc, char* argv[]){
                     //handle backspace
                     if(counter > 0){
                         int advance;
-                        TTF_GlyphMetrics(font, textBuffer[counter], NULL, NULL, NULL, NULL, &advance);
+                        TTF_GlyphMetrics(font, textBuffer[counter - 1], NULL, NULL, NULL, NULL, &advance);
                         destRect.w -= advance;
                         srcRect.w = destRect.w;
                         textBuffer[counter] = '\0';
@@ -226,10 +198,19 @@ int main(int argc, char* argv[]){
             break;
             case SDL_TEXTINPUT: // writing text
                 if(messageInput){
-                    printf("%s\n", event.text.text);
-                    printf("counter = %d\n", counter);
                     textBuffer[counter] = *event.text.text;
+                    textBuffer[counter + 1] = '\0';
+                    
+                    int advance;
+                    TTF_GlyphMetrics(font, textBuffer[counter], NULL, NULL, NULL, NULL, &advance);
+                    assert(TTF_GlyphIsProvided(font, textBuffer[counter])); // check that a glyph exists, change to different?    
+
+                    srcRect.h = destRect.h; // multiple rows?
+                    destRect.w += advance; // updates width
+                    srcRect.w = destRect.w;
+                    
                     ++counter; // counter declared at top
+
                 }
             break;
             case SDL_QUIT:
@@ -240,6 +221,7 @@ int main(int argc, char* argv[]){
         //sleep(0.1);
     
     }
+    SDL_StopTextInput();
     
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
