@@ -109,13 +109,12 @@ void printConversation(SDL_Renderer *renderer, char *conv, TTF_Font *font, int f
             //read up to 10 messages and print them
             for(f = 0; f < 10; f++){
                 // read one message in reverse order.
-                while((ch = (char)fgetc(conversation)) != '\n'){
-                    long int pos = ftell(conversation);
-                    if(pos < 2){
-                        break;
-                    }
+                while((ch = (char)fgetc(conversation)) != '\n'){                    
                     convBuffer[counter] = ch;
                     counter++;
+                    if (ftell(conversation) < 1){
+                        break;
+                    }
                     fseek(conversation, -2*sizeof(char), SEEK_CUR);
                 }
                 int i;
@@ -138,12 +137,17 @@ void printConversation(SDL_Renderer *renderer, char *conv, TTF_Font *font, int f
                     fclose(conversation);
                     return;
                 }
+                printf("%s\n", readBuffer);
                 if(readBuffer == "***Welcome to start***"){
                     break;
                 }
                 //printf("dest.x = %d, src.x = %d\n", destRect.x, srcRect.x);
                 printTextString(renderer, readBuffer, font, &destRect, &srcRect, color);
-                fseek(conversation, -2*sizeof(char), SEEK_CUR);
+                if (ftell(conversation) > 1) {
+                    fseek(conversation, -2*sizeof(char), SEEK_CUR);
+                } else {
+                    break;
+                }
                 counter = 0;
             }
         }
