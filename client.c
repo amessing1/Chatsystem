@@ -92,7 +92,7 @@ void printConversation(SDL_Renderer *renderer, char *conv, TTF_Font *font, int f
     
     FILE *conversation; 
     if((conversation = fopen(conv, "r")) == NULL){
-        printf("open converation file failed");
+        printf("open conversation file failed");
     } else {
         if((fseek(conversation, -sizeof(char), SEEK_END)) == -1){
             printf("fseek failed");
@@ -105,12 +105,12 @@ void printConversation(SDL_Renderer *renderer, char *conv, TTF_Font *font, int f
             SDL_Rect destRect;
             srcRect.w = 0;
             int f;
-            for(f = 0; f < 20; f++){
-                printf("f = %d\n", f);
+
+            //read up to 10 messages and print them
+            for(f = 0; f < 10; f++){
+                // read one message in reverse order.
                 while((ch = (char)fgetc(conversation)) != '\n'){
-                    printf("ch = %s\n", &ch);
                     long int pos = ftell(conversation);
-                    printf("pos = %ld\n", pos);
                     if(pos < 2){
                         break;
                     }
@@ -120,8 +120,9 @@ void printConversation(SDL_Renderer *renderer, char *conv, TTF_Font *font, int f
                 }
                 int i;
                 int advance = 0;
+                // Reverse the order of the word
                 for(i = 0; i < counter; i++){
-                    readBuffer[i] = convBuffer[counter - i];
+                    readBuffer[i] = convBuffer[counter - 1 - i];
                     TTF_GlyphMetrics(font, readBuffer[i], NULL, NULL, NULL, NULL, &advance);
                     srcRect.w += advance;
                 }
@@ -137,12 +138,28 @@ void printConversation(SDL_Renderer *renderer, char *conv, TTF_Font *font, int f
                     fclose(conversation);
                     return;
                 }
+                if(readBuffer == "***Welcome to start***"){
+                    break;
+                }
                 //printf("dest.x = %d, src.x = %d\n", destRect.x, srcRect.x);
                 printTextString(renderer, readBuffer, font, &destRect, &srcRect, color);
+                fseek(conversation, -2*sizeof(char), SEEK_CUR);
+                counter = 0;
             }
         }
         fclose(conversation);
     }
+}
+
+void sendMessage(char *message, char *activeChat){
+    FILE *conversation;
+    if((conversation = fopen(activeChat, "a")) == NULL){
+        printf("open conversation file failed");
+    } else {
+        fseek(conversation, 0, SEEK_END);
+        fprintf(conversation, "%s\n", message);
+    }
+    fclose(conversation);
 }
 
 int main(int argc, char* argv[]){
@@ -207,9 +224,7 @@ int main(int argc, char* argv[]){
         SDL_Rect *messageBox = renderGUI(renderer, SCREEN_WIDTH / 2 - 100, 10, SCREEN_WIDTH / 2 + 90, SCREEN_HEIGHT - 60, 200, 200, 200); //recieve text box
         SDL_Rect *profileBox = renderGUI(renderer, 10, 10, SCREEN_WIDTH / 2 - 120, 100, 200, 200, 200); // profile box
         SDL_Rect *friendsBox = renderGUI(renderer, 10, 120, SCREEN_WIDTH / 2 - 120, SCREEN_HEIGHT - 130, 200, 200, 200); // friends list
-        printf("HERE\n");
         printConversation(renderer, activeChat, font, fontHeight, messageBox, textColor);
-        printf("HERE2\n");
 
         if (counter > 0){
             printTextString(renderer, textBuffer, font, &destRect, &srcRect, textColor);
@@ -251,6 +266,7 @@ int main(int argc, char* argv[]){
                     //handle retrun
                     if(counter > 0){
                         //print message to message box
+                        sendMessage(textBuffer, activeChat);
                         counter = 0;
                         destRect.w = 0;
                         srcRect.w = 0;
