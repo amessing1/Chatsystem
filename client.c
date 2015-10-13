@@ -48,14 +48,35 @@ void printTextString(SDL_Renderer *renderer, char buffer[], TTF_Font *font, SDL_
     SDL_Color bgcolor = {128,128,128}; // background font color, used only in Shaded
 
     //printf("glyph = %s, counter = %d\n", buffer, counter);            
-
+    //SDL_ClearError();
     SDL_Surface *textSurface;
     SDL_Texture *textTexture;
-    textSurface = TTF_RenderUTF8_Blended(font, buffer, color);
-    textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-    SDL_RenderCopy(renderer, textTexture, srcRect, destRect);
-    SDL_RenderPresent(renderer);
+    //printf("%s\n", buffer);
 
+    SDL_ClearError();
+    if(font == NULL){
+        printf("font is null");
+    }
+    //printf("%s\n", buffer);
+    int w = 0;
+    TTF_SizeUTF8(font, buffer, &w, NULL);
+    printf("w = %d\n", w);
+    textSurface = TTF_RenderUTF8_Blended(font, buffer, color);
+    if(textSurface == NULL){
+        printf("textsurface is null\n");
+    }
+    printf("1: %s\n", SDL_GetError());
+    SDL_ClearError();
+   
+    textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    printf("2: %s\n", SDL_GetError());
+    SDL_ClearError();
+
+    SDL_RenderCopy(renderer, textTexture, srcRect, destRect);
+    printf("3: %s\n", SDL_GetError());
+    SDL_ClearError();
+    SDL_RenderPresent(renderer);
+    printf("4: %s\n", SDL_GetError());
    
     return;
 }
@@ -104,15 +125,22 @@ void printConversation(SDL_Renderer *renderer, char *conv, TTF_Font *font, int f
             SDL_Rect srcRect;
             SDL_Rect destRect;
             srcRect.w = 0;
-            int f;
+            srcRect.x = 0;
+            srcRect.y = 0;
+            int f = 0;
 
             //read up to 10 messages and print them
-            for(f = 0; f < 10; f++){
+            while(destRect.y < messageBox->h){
+                f++;
+                destRect.w = 0;
+                srcRect.w = 0;
                 // read one message in reverse order.
-                while((ch = (char)fgetc(conversation)) != '\n'){                    
+                while((ch = (char)fgetc(conversation)) != '\n'){   
+                    //printf("%s\n", (char *)&ch);                 
                     convBuffer[counter] = ch;
                     counter++;
-                    if (ftell(conversation) < 1){
+                    if (ftell(conversation) < 2){
+                        //printf("start of conversation\n");
                         break;
                     }
                     fseek(conversation, -2*sizeof(char), SEEK_CUR);
@@ -138,12 +166,18 @@ void printConversation(SDL_Renderer *renderer, char *conv, TTF_Font *font, int f
                     return;
                 }
                 printf("%s\n", readBuffer);
-                if(readBuffer == "***Welcome to start***"){
+                if(strcmp(readBuffer, "Welcome to start") == 0){
+                    printf("HEJ!\n");
                     break;
                 }
-                //printf("dest.x = %d, src.x = %d\n", destRect.x, srcRect.x);
+                printf("dest.x = %d, src.x = %d\n", destRect.x, srcRect.x);
+                printf("dest.y = %d, src.y = %d\n", destRect.y, srcRect.y);
+                printf("dest.w = %d, src.w = %d\n", destRect.w, srcRect.w);
+                printf("dest.h = %d, src.h = %d\n", destRect.h, srcRect.h);
+                //printf("%d\n", f);
+                
                 printTextString(renderer, readBuffer, font, &destRect, &srcRect, color);
-                if (ftell(conversation) > 1) {
+                if (ftell(conversation) > 2) {
                     fseek(conversation, -2*sizeof(char), SEEK_CUR);
                 } else {
                     break;
@@ -187,6 +221,7 @@ int main(int argc, char* argv[]){
     TTF_Font *font;
     if((font = TTF_OpenFont("fonts/FreeSerif.ttf", 20)) == NULL){
         printf("TTF_OpenFont: %s\n", TTF_GetError());
+        exit(0);
     }
     //TTF_SetFontOutline(font, 1);
     int fontAscent = TTF_FontAscent(font);
